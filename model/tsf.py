@@ -3,10 +3,10 @@ import torch.nn as nn
 from .vit import VisionTransformer
 
 
-def tsf_base_4c_32f(num_classes):
+def tsf4_f32(output_dim):
     model = VisionTransformer(
         img_size=224,
-        num_classes=num_classes,
+        output_dim=output_dim,
         patch_size=16,
         in_chans=4,
         embed_dim=768,

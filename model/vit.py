@@ -15,7 +15,7 @@ class VisionTransformer(nn.Module):
                  img_size=224,
                  patch_size=16,
                  in_chans=3,
-                 num_classes=1000,
+                 output_dim=-1,
                  embed_dim=768,
                  depth=12,
                  num_heads=12,
@@ -34,7 +34,7 @@ class VisionTransformer(nn.Module):
         self.attention_type = attention_type
         self.depth = depth
         self.dropout = nn.Dropout(dropout)
-        self.num_classes = num_classes
+        self.output_dim = output_dim
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         self.patch_embed = PatchEmbed(
             img_size=img_size,
@@ -70,7 +70,7 @@ class VisionTransformer(nn.Module):
         self.norm = norm_layer(embed_dim)
 
         # Classifier head
-        self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        self.head = nn.Linear(embed_dim, output_dim) if output_dim > 0 else nn.Identity()
 
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
@@ -103,9 +103,9 @@ class VisionTransformer(nn.Module):
     def get_classifier(self):
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=''):
-        self.num_classes = num_classes
-        self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+    def reset_classifier(self, output_dim, global_pool=''):
+        self.output_dim = output_dim
+        self.head = nn.Linear(self.embed_dim, output_dim) if output_dim > 0 else nn.Identity()
 
     def forward_features(self, x):
         B = x.shape[0]
@@ -129,7 +129,6 @@ class VisionTransformer(nn.Module):
         else:
             x = x + self.pos_embed
         x = self.pos_drop(x)
-
 
         ## Time Embeddings
         if self.attention_type != 'space_only':
