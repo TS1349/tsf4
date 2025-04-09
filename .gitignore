@@ -1,3 +1,6 @@
+# ==== my stuff ====
+/dataset/*
+# ==== copied from random repo ====
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
