@@ -1,7 +1,7 @@
 from .vit import VisionTransformer
-from .tsf import tsf_base_4c_32f
+from .tsf import BridgedTimeSFormer4C
 
 __all__ = [
-    'VisionTransformer',
-    'tsf_base_4c_32f',
+    "VisionTransformer",
+    "BridgedTimeSFormer4C",
 ]
