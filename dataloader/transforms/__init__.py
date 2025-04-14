@@ -1,5 +1,5 @@
-from resize_shortest import ResizeShortest
+from .abs_fft import AbsFFT
 
 __all__ = [
-    "ResizeShortest",
+    "AbsFFT",
 ]
