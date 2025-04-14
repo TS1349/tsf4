@@ -1,6 +1,6 @@
-from .utils import torch_random_int
+from ..utils import torch_random_int
 
-class RandomCrop(object):
+class FullCenterCrop(object):
     def __init__(self, crop_size=(224,224)):
         self.crop_height, self.crop_width = crop_size
 
