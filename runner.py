@@ -142,6 +142,7 @@ if "__main__" == __name__:
     print(f"number of cuda devices {world_size}")
 
     args = (
+        world_size,
         epochs,
         batch_size,
         learning_rate,
@@ -150,6 +151,7 @@ if "__main__" == __name__:
         experiment_name,
         checkpoint_dir,
     )
+
     mp.spawn(run,
              args=args,
              nprocs=world_size)
