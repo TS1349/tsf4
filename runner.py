@@ -33,6 +33,8 @@ def run(
     batch_size,
     learning_rate,
     weight_decay,
+    csv_file,
+    experiment_name,
 ):
 
     ddp_setup(rank, world_size)
@@ -47,14 +49,14 @@ def run(
          )]
     )
     training_dataset = MDMERDataset(
-        csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
+        csv_file=csv_file,
         time_window = 5.0, #sec
         video_transform=video_preprocessor,
         eeg_transform = AbsFFT(dim=-2),
         split = "train"
     )
     validation_dataset = MDMERDataset(
-        csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
+        csv_file=csv_file,
         time_window = 5.0, #sec
         video_transform=video_preprocessor,
         eeg_transform = AbsFFT(dim=-2),
@@ -106,6 +108,7 @@ def run(
         loss_function=loss_function,
         checkpoint_dir="./",
         gpu_id=rank,
+        experiment_name=experiment_name,
     )
 
     p_trainer.train(epochs)
@@ -120,35 +123,30 @@ if "__main__" == __name__:
     parser.add_argument("--epochs", type=int, required = True)
     parser.add_argument("--batch_size", type=int, required = True)
     parser.add_argument("--learning_rate", type=float, required = True)
-    parser.add_argument("--momentum", type=float, required = True)
     parser.add_argument("--weight_decay", type=float, required = True)
-    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--csv_file", type=str, required=True)
+    parser.add_argument("--experiment_name", type=str, required=True)
 
     args = parser.parse_args()
 
-    batch_size = args.batch_size
     epochs = args.epochs
-
-    optimizer = args.optimizer
+    batch_size = args.batch_size
     learning_rate = args.learning_rate
-    momentum = args.momentum
     weight_decay = args.weight_decay
+    csv_file = args.csv_file
+    experiment_name = args.experiment_name
 
     world_size = torch.cuda.device_count()
     print(f"number of cuda devices {world_size}")
 
-    # rank,
-    # world_size,
-    # epochs,
-    # batch_size,
-    # learning_rate,
-    # weight_decay,
-    args = (world_size,
-            epochs,
-            batch_size,
-            learning_rate,
-            weight_decay,
-            )
+    args = (
+        epochs,
+        batch_size,
+        learning_rate,
+        weight_decay,
+        csv_file,
+        experiment_name,
+    )
     mp.spawn(run,
              args=args,
              nprocs=world_size)

@@ -1,4 +1,3 @@
-import os
 import math
 import time
 import torch
@@ -56,7 +55,10 @@ class PTrainer:
                                  )
 
         self.optimizer.step()
-        print(f"TR, GPU ID : {self.gpu_id}, BN: {batch_number},  loss : {loss.item()},   ", {"training_loss": loss.item()}, batch_number)
+        print(f"\
+TR, GPU ID : {self.gpu_id}, BN: {batch_number},\
+loss : {loss.item()}, lr : {self.optimizer.state_dict["lr"]}\
+")
 
     def _time_stamp(self):
         return str(math.floor(time.time()))
@@ -86,13 +88,13 @@ class PTrainer:
                 predictions = self.model(x)
                 test_loss += self.loss_function(predictions, y).item()
                 correct +=\
-                    (predictions.argmax(1) == y).type(torch.float).sum().item()
+                    (predictions.argmax(1) == y).type(torch.float).sum(0)
                 counter += 1
 
             test_loss /= num_batches
             correct /= size
             if self.gpu_id == 0:
-                print("TODO eval log")
+                print(f"VA, GPU ID : {self.gpu_id}, loss : {test_loss}, accuracy : {correct}")
 
     def train(self, epochs: int):
         self.time_stamp = self._time_stamp()

@@ -170,7 +170,7 @@ class EAVDataset(VERandomDataset):
             num_out_eeg = 64,
             ):
 
-        self.output_shape = (1,5)
+        self.output_shape = (5,1)
         super(EAVDataset,self).__init__(
                 csv_file = csv_file,
                 eeg_sampling_rate = 500,
@@ -196,7 +196,7 @@ class MDMERDataset(VERandomDataset):
             num_out_eeg = 64,
             ):
 
-        self.output_shape = (3,9)
+        self.output_shape = (9,3)
         super(MDMERDataset,self).__init__(
                 csv_file = csv_file,
                 eeg_sampling_rate = 300,
@@ -222,7 +222,7 @@ class EmognitionDataset(VERandomDataset):
             num_out_eeg = 64,
             ):
 
-        self.output_shape = (3,9)
+        self.output_shape = (9,3)
         super(EmognitionDataset,self).__init__(
                 csv_file = csv_file,
                 eeg_sampling_rate = 256,
