@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from trainer import PTrainer
-from model import BridgedTimeSFormer4C, BridgedTimeSFormer4C_small
+from model import BridgedTimeSFormer4C
 from dataloader import VERandomDataset, TestDataset
 from dataloader.transforms import AbsFFT
 
@@ -31,36 +31,35 @@ def run(
     epochs,
     batch_size,
     learning_rate,
-    momentum,
 ):
 
     ddp_setup(rank, world_size)
-    #video_preprocessor = Compose(
-    #    [CenterCrop(size=(480,480)),
-    #     Resize(size=(224,224)),
-    #     RandomHorizontalFlip(p=0.5),
-    #     ToDtype(torch.float32, scale=True),
-    #     Normalize(
-    #         mean=(0.45, 0.45, 0.45),
-    #         std=(0.225, 0.225, 0.225),
-    #     )]
-    #)
-    #training_dataset = VERandomDataset(
-    #    csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
-    #    eeg_sampling_rate=500,
-    #    time_window = 5.0, #sec
-    #    video_transform=video_preprocessor,
-    #    eeg_transform = AbsFFT(dim=-2),
-    #    split = "train"
-    #)
-    #validation_dataset = VERandomDataset(
-    #    csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
-    #    eeg_sampling_rate=500,
-    #    time_window = 5.0, #sec
-    #    video_transform=video_preprocessor,
-    #    eeg_transform = AbsFFT(dim=-2),
-    #    split = "test"
-    #)
+    video_preprocessor = Compose(
+        [CenterCrop(size=(480,480)),
+         Resize(size=(224,224)),
+         RandomHorizontalFlip(p=0.5),
+         ToDtype(torch.float32, scale=True),
+         Normalize(
+             mean=(0.45, 0.45, 0.45),
+             std=(0.225, 0.225, 0.225),
+         )]
+    )
+    training_dataset = VERandomDataset(
+        csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
+        eeg_sampling_rate=500,
+        time_window = 5.0, #sec
+        video_transform=video_preprocessor,
+        eeg_transform = AbsFFT(dim=-2),
+        split = "train"
+    )
+    validation_dataset = VERandomDataset(
+        csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
+        eeg_sampling_rate=500,
+        time_window = 5.0, #sec
+        video_transform=video_preprocessor,
+        eeg_transform = AbsFFT(dim=-2),
+        split = "test"
+    )
 
     training_dataset = TestDataset()
     validation_dataset = TestDataset()
@@ -80,7 +79,7 @@ def run(
         shuffle=False,
     ) if validation_dataset is not None else None
 
-    model = BridgedTimeSFormer4C_small(
+    model = BridgedTimeSFormer4C(
                  output_dim = 4,
                  image_size = 224,
                  eeg_channels = 8,
@@ -91,14 +90,18 @@ def run(
 
 
     loss_function = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(
+
+    optimizer = torch.optim.AdamW(
         params=model.parameters(),
         lr=learning_rate,
-        momentum=momentum,
-    )
+        betas=(0.9, 0.999),
+        weight_decay=1e-4
+)
+
 
     p_trainer = PTrainer(
         model=model,
+        lr_scheduler = None,
         training_dataloader=training_dataloader,
         validation_dataloader=validation_dataloader,
         optimizer=optimizer,
@@ -111,6 +114,7 @@ def run(
     p_trainer.train(epochs)
 
     destroy_process_group()
+    print(f"{rank} process group destroyed")
 
 
 if "__main__" == __name__:
@@ -118,7 +122,6 @@ if "__main__" == __name__:
 
     parser.add_argument("--epochs", type=int, required = True)
     parser.add_argument("--batch_size", type=int, required = True)
-    parser.add_argument("--optimizer", type=str, required = True)
     parser.add_argument("--learning_rate", type=float, required = True)
     parser.add_argument("--momentum", type=float, required = True)
     parser.add_argument("--dataset", type=str, required=True)

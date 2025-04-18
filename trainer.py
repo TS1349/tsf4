@@ -10,10 +10,11 @@ class PTrainer:
     def __init__(self,
                  model,
                  optimizer,
+                 lr_scheduler,
                  loss_function,
-                 gpu_id,
                  training_dataloader,
                  validation_dataloader,
+                 gpu_id,
                  checkpoint_dir,
                  logger,
                  experiment_name="",
@@ -28,6 +29,7 @@ class PTrainer:
 
         self.loss_function = loss_function
         self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         self.logger = logger
 
         # multi-gpu
