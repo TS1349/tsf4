@@ -16,7 +16,6 @@ class PTrainer:
                  validation_dataloader,
                  gpu_id,
                  checkpoint_dir,
-                 logger,
                  experiment_name="",
                  ):
 
@@ -30,13 +29,12 @@ class PTrainer:
         self.loss_function = loss_function
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.logger = logger
 
         # multi-gpu
         self.gpu_id = gpu_id
         self.model = DDP(model, device_ids=[self.gpu_id])
 
-    def _save_checkpoint(self, epoch) -> None:
+    def _save_checkpoint(self, epoch):
         checkpoint = self.model.module.state_dict()
         checkpoint_path =\
             f"{self.checkpoint_dir}/{self.time_stamp}_{self.experiment_name}_{epoch}.pt"
@@ -58,9 +56,7 @@ class PTrainer:
                                  )
 
         self.optimizer.step()
-        self.logger(f"TR[{self.gpu_id}]",
-                    {"training_loss": loss.item()},
-                    batch_number)
+        print(f"TR, GPU ID : {self.gpu_id}, BN: {batch_number},  loss : {loss.item()},   ", {"training_loss": loss.item()}, batch_number)
 
     def _time_stamp(self):
         return str(math.floor(time.time()))
@@ -96,15 +92,14 @@ class PTrainer:
             test_loss /= num_batches
             correct /= size
             if self.gpu_id == 0:
-                self.logger("VA",
-                            {"validation_accuracy": correct,
-                             "validation_loss": test_loss})
+                print("TODO eval log")
 
-    def train(self, epochs: int) -> None:
+    def train(self, epochs: int):
         self.time_stamp = self._time_stamp()
         for epoch in range(epochs):
             self._run_epoch(epoch)
             if self.gpu_id == 0:
                 self._eval()
                 self._save_checkpoint(epoch)
+            self.lr_scheduler.step()
 

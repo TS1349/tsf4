@@ -53,18 +53,20 @@ class VERandomDataset(Dataset):
         raise NotImplementedError("This fuction shouldn't have been accessed")
 
     def _get_cont_labels(self, row):
+        # returns 3 int32 class ids starting from 0
         self_annotation = row.self_annotation[1:-1].split(r",")
-        self_annotation = [ float(entry) for entry in self_annotation ]
-        return torch.tensor(self_annotation, dtype = torch.float32)
+        self_annotation = [ int(entry) - 1 for entry in self_annotation ]
+        return torch.tensor(self_annotation, dtype = torch.int64)
 
     def _get_ctgr_labels(self, row):
-        return torch.tensor(row.label_id, dtype = torch.int32)
+        return torch.tensor(row.label_id, dtype = torch.int64)
     
     def _get_full_eeg(self, row):
         eeg = pd.read_csv(row.EEG)
         eeg = torch.tensor(eeg.to_numpy(), dtype = torch.float32)
         return eeg
     
+    @staticmethod
     def _decimate_idxs(start_idx, end_idx, final_number):
         delta = end_idx - start_idx
         return [ round(start_idx + i * delta / (final_number -1)) for i in range(final_number) ]
@@ -153,3 +155,82 @@ class VERandomDataset(Dataset):
                 "eeg" : eeg,
                 "output" : output,
                }
+
+
+class EAVDataset(VERandomDataset):
+    def __init__(
+            self,
+            csv_file,
+            time_window = 5.0,
+            split="train",
+            video_output_format = "TCHW",
+            video_transform = None,
+            eeg_transform = None,
+            num_out_frames = 32,
+            num_out_eeg = 64,
+            ):
+
+        self.output_shape = (1,5)
+        super(EAVDataset,self).__init__(
+                csv_file = csv_file,
+                eeg_sampling_rate = 500,
+                time_window = time_window,
+                split=split,
+                video_output_format = video_output_format,
+                video_transform = video_transform,
+                eeg_transform = eeg_transform,
+                num_out_frames = num_out_frames,
+                num_out_eeg = num_out_eeg,
+        )
+
+class MDMERDataset(VERandomDataset):
+    def __init__(
+            self,
+            csv_file,
+            time_window = 5.0,
+            split="train",
+            video_output_format = "TCHW",
+            video_transform = None,
+            eeg_transform = None,
+            num_out_frames = 32,
+            num_out_eeg = 64,
+            ):
+
+        self.output_shape = (3,9)
+        super(MDMERDataset,self).__init__(
+                csv_file = csv_file,
+                eeg_sampling_rate = 300,
+                time_window = time_window,
+                split=split,
+                video_output_format = video_output_format,
+                video_transform = video_transform,
+                eeg_transform = eeg_transform,
+                num_out_frames = num_out_frames,
+                num_out_eeg = num_out_eeg,
+        )
+
+class EmognitionDataset(VERandomDataset):
+    def __init__(
+            self,
+            csv_file,
+            time_window = 5.0,
+            split="train",
+            video_output_format = "TCHW",
+            video_transform = None,
+            eeg_transform = None,
+            num_out_frames = 32,
+            num_out_eeg = 64,
+            ):
+
+        self.output_shape = (3,9)
+        super(EmognitionDataset,self).__init__(
+                csv_file = csv_file,
+                eeg_sampling_rate = 256,
+                time_window = time_window,
+                split=split,
+                video_output_format = video_output_format,
+                video_transform = video_transform,
+                eeg_transform = eeg_transform,
+                num_out_frames = num_out_frames,
+                num_out_eeg = num_out_eeg,
+        )

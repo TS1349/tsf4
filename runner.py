@@ -11,8 +11,9 @@ import torch.optim as optim
 
 from trainer import PTrainer
 from model import BridgedTimeSFormer4C
-from dataloader import VERandomDataset, TestDataset
+from dataloader import VERandomDataset, TestDataset, EAVDataset, EmognitionDataset, MDMERDataset
 from dataloader.transforms import AbsFFT
+from scheduler import SteppedScheduler
 
 import argparse
 
@@ -31,6 +32,7 @@ def run(
     epochs,
     batch_size,
     learning_rate,
+    weight_decay,
 ):
 
     ddp_setup(rank, world_size)
@@ -44,25 +46,20 @@ def run(
              std=(0.225, 0.225, 0.225),
          )]
     )
-    training_dataset = VERandomDataset(
+    training_dataset = MDMERDataset(
         csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
-        eeg_sampling_rate=500,
         time_window = 5.0, #sec
         video_transform=video_preprocessor,
         eeg_transform = AbsFFT(dim=-2),
         split = "train"
     )
-    validation_dataset = VERandomDataset(
+    validation_dataset = MDMERDataset(
         csv_file="datasets/share_datasets/fold_csv_files/MDMER_fold_csv/MDMER_dataset_updated_fold0.csv",
-        eeg_sampling_rate=500,
         time_window = 5.0, #sec
         video_transform=video_preprocessor,
         eeg_transform = AbsFFT(dim=-2),
         split = "test"
     )
-
-    training_dataset = TestDataset()
-    validation_dataset = TestDataset()
 
     training_dataloader = DataLoader(
         dataset=training_dataset,
@@ -80,7 +77,7 @@ def run(
     ) if validation_dataset is not None else None
 
     model = BridgedTimeSFormer4C(
-                 output_dim = 4,
+                 output_dim = training_dataset.output_shape,
                  image_size = 224,
                  eeg_channels = 8,
                  frequency_bins = 64,
@@ -95,20 +92,20 @@ def run(
         params=model.parameters(),
         lr=learning_rate,
         betas=(0.9, 0.999),
-        weight_decay=1e-4
+        weight_decay=weight_decay
 )
+    lr_scheduler = SteppedScheduler(optimizer)
 
 
     p_trainer = PTrainer(
         model=model,
-        lr_scheduler = None,
+        lr_scheduler = lr_scheduler,
         training_dataloader=training_dataloader,
         validation_dataloader=validation_dataloader,
         optimizer=optimizer,
         loss_function=loss_function,
         checkpoint_dir="./",
         gpu_id=rank,
-        logger = None,
     )
 
     p_trainer.train(epochs)
@@ -124,6 +121,7 @@ if "__main__" == __name__:
     parser.add_argument("--batch_size", type=int, required = True)
     parser.add_argument("--learning_rate", type=float, required = True)
     parser.add_argument("--momentum", type=float, required = True)
+    parser.add_argument("--weight_decay", type=float, required = True)
     parser.add_argument("--dataset", type=str, required=True)
 
     args = parser.parse_args()
@@ -134,6 +132,7 @@ if "__main__" == __name__:
     optimizer = args.optimizer
     learning_rate = args.learning_rate
     momentum = args.momentum
+    weight_decay = args.weight_decay
 
     world_size = torch.cuda.device_count()
     print(f"number of cuda devices {world_size}")
@@ -143,12 +142,13 @@ if "__main__" == __name__:
     # epochs,
     # batch_size,
     # learning_rate,
-    # momentum,
+    # weight_decay,
     args = (world_size,
             epochs,
             batch_size,
             learning_rate,
-            momentum,)
+            weight_decay,
+            )
     mp.spawn(run,
              args=args,
              nprocs=world_size)
