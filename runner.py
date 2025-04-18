@@ -35,6 +35,7 @@ def run(
     weight_decay,
     csv_file,
     experiment_name,
+    checkpoint_dir,
 ):
 
     ddp_setup(rank, world_size)
@@ -90,10 +91,9 @@ def run(
 
     loss_function = nn.CrossEntropyLoss()
 
-    optimizer = torch.optim.AdamW(
+    optimizer = torch.optim.SGD(
         params=model.parameters(),
         lr=learning_rate,
-        betas=(0.9, 0.999),
         weight_decay=weight_decay
 )
     lr_scheduler = SteppedScheduler(optimizer)
@@ -106,7 +106,7 @@ def run(
         validation_dataloader=validation_dataloader,
         optimizer=optimizer,
         loss_function=loss_function,
-        checkpoint_dir="./",
+        checkpoint_dir=checkpoint_dir,
         gpu_id=rank,
         experiment_name=experiment_name,
     )
@@ -125,6 +125,7 @@ if "__main__" == __name__:
     parser.add_argument("--learning_rate", type=float, required = True)
     parser.add_argument("--weight_decay", type=float, required = True)
     parser.add_argument("--csv_file", type=str, required=True)
+    parser.add_argument("--checkpoint_dir", type=str, required=True)
     parser.add_argument("--experiment_name", type=str, required=True)
 
     args = parser.parse_args()
@@ -135,6 +136,7 @@ if "__main__" == __name__:
     weight_decay = args.weight_decay
     csv_file = args.csv_file
     experiment_name = args.experiment_name
+    checkpoint_dir =args.checkpoint_dir
 
     world_size = torch.cuda.device_count()
     print(f"number of cuda devices {world_size}")
@@ -146,6 +148,7 @@ if "__main__" == __name__:
         weight_decay,
         csv_file,
         experiment_name,
+        checkpoint_dir,
     )
     mp.spawn(run,
              args=args,
